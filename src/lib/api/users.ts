@@ -1,5 +1,18 @@
 import apiClient from "./client";
-import { Admin, Customer, Freelancer, Contributor } from "../types";
+import {
+  Admin,
+  Customer,
+  Freelancer,
+  Contributor,
+  CreateFreelancerDto,
+  UpdateFreelancerDto,
+  ProjectOffer,
+  FreelancerSkill,
+  FreelancerRating,
+  FreelancerCourse,
+  CreateFreelancerSkillDto,
+  UpdateFreelancerSkillDto,
+} from "../types";
 
 // Admins API
 export const adminsApi = {
@@ -88,7 +101,7 @@ export const freelancersApi = {
     return response.data;
   },
 
-  create: async (freelancer: Partial<Freelancer>): Promise<Freelancer> => {
+  create: async (freelancer: CreateFreelancerDto): Promise<Freelancer> => {
     const response = await apiClient.post<Freelancer>(
       "/Freelancers",
       freelancer
@@ -98,7 +111,7 @@ export const freelancersApi = {
 
   update: async (
     id: number,
-    freelancer: Partial<Freelancer>
+    freelancer: UpdateFreelancerDto
   ): Promise<Freelancer> => {
     const response = await apiClient.put<Freelancer>(
       `/Freelancers/${id}`,
@@ -109,6 +122,104 @@ export const freelancersApi = {
 
   delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/Freelancers/${id}`);
+  },
+
+  getBySkill: async (skillId: number): Promise<Freelancer[]> => {
+    const response = await apiClient.get<Freelancer[]>(
+      `/Freelancers/skills/${skillId}`
+    );
+    return response.data;
+  },
+
+  getAverageRating: async (
+    id: number
+  ): Promise<{
+    freelancerID: number;
+    averageRating: number;
+    ratingCount: number;
+  }> => {
+    const response = await apiClient.get<{
+      freelancerID: number;
+      averageRating: number;
+      ratingCount: number;
+    }>(`/FreelancerRatings/freelancer/${id}/average`);
+    return response.data;
+  },
+
+  getCourseCount: async (
+    id: number
+  ): Promise<{
+    freelancerId: number;
+    courseCount: number;
+  }> => {
+    const response = await apiClient.get<{
+      freelancerId: number;
+      courseCount: number;
+    }>(`/FreelancerCourses/freelancer/${id}/count`);
+    return response.data;
+  },
+
+  getProjectOffersCount: async (
+    applicantId: number
+  ): Promise<{ applicantID: number; offerCount: number }> => {
+    const response = await apiClient.get<{
+      applicantID: number;
+      offerCount: number;
+    }>(`/ProjectOffers/applicant/${applicantId}/count`);
+    return response.data;
+  },
+
+  getProjectOffers: async (applicantId: number): Promise<ProjectOffer[]> => {
+    const response = await apiClient.get<ProjectOffer[]>(
+      `/ProjectOffers/applicant/${applicantId}`
+    );
+    return response.data;
+  },
+
+  getSkills: async (freelancerId: number): Promise<FreelancerSkill[]> => {
+    const response = await apiClient.get<FreelancerSkill[]>(
+      `/FreelancerSkills/freelancer/${freelancerId}`
+    );
+    return response.data;
+  },
+
+  createSkill: async (
+    skill: CreateFreelancerSkillDto
+  ): Promise<FreelancerSkill> => {
+    const response = await apiClient.post<FreelancerSkill>(
+      "/FreelancerSkills",
+      skill
+    );
+    return response.data;
+  },
+
+  updateSkill: async (
+    id: number,
+    skill: UpdateFreelancerSkillDto
+  ): Promise<FreelancerSkill> => {
+    const response = await apiClient.put<FreelancerSkill>(
+      `/FreelancerSkills/${id}`,
+      skill
+    );
+    return response.data;
+  },
+
+  deleteSkill: async (id: number): Promise<void> => {
+    await apiClient.delete(`/FreelancerSkills/${id}`);
+  },
+
+  getRatings: async (freelancerId: number): Promise<FreelancerRating[]> => {
+    const response = await apiClient.get<FreelancerRating[]>(
+      `/FreelancerRatings/freelancer/${freelancerId}`
+    );
+    return response.data;
+  },
+
+  getCourses: async (freelancerId: number): Promise<FreelancerCourse[]> => {
+    const response = await apiClient.get<FreelancerCourse[]>(
+      `/FreelancerCourses/freelancer/${freelancerId}`
+    );
+    return response.data;
   },
 };
 

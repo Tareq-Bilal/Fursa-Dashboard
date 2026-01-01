@@ -43,6 +43,30 @@ export interface Freelancer {
   receivedRatings: FreelancerRating[];
 }
 
+export interface CreateFreelancerDto {
+  fullName: string;
+  jobTitle: string;
+  description: string;
+  country: string;
+  email: string;
+  password: string;
+  profileImagePath?: string;
+  resumePath?: string;
+  rating?: number;
+}
+
+export interface UpdateFreelancerDto {
+  id: number;
+  fullName: string;
+  jobTitle: string;
+  description: string;
+  country: string;
+  email: string;
+  profileImagePath?: string;
+  resumePath?: string;
+  rating?: number;
+}
+
 export interface Contributor {
   id: number;
   name: string;
@@ -57,13 +81,33 @@ export interface Contributor {
 
 export interface FreelancerSkill {
   id: number;
+  freelancerID: number;
+  skillName: string;
+}
+
+export interface CreateFreelancerSkillDto {
+  freelancerID: number;
+  skillName: string;
+}
+
+export interface UpdateFreelancerSkillDto {
+  id: number;
+  freelancerID: number;
   skillName: string;
 }
 
 export interface FreelancerCourse {
   id: number;
-  courseId: number;
-  courseName: string;
+  freelancerID: number;
+  courseID: number;
+  progressPercentage: number;
+  freelancerName: string;
+  courseTitle: string;
+  courseDescription: string;
+  courseLink: string;
+  courseImageUrl: string;
+  courseFieldName: string;
+  contributorName: string;
 }
 
 export interface ProjectGallery {
@@ -162,7 +206,7 @@ export interface Notification {
   id: number;
   title: string;
   message: string;
-  targetAudience: 'all' | 'freelancers' | 'customers' | 'contributors';
+  targetAudience: "all" | "freelancers" | "customers" | "contributors";
   sentAt: string;
   readCount: number;
   totalRecipients: number;
