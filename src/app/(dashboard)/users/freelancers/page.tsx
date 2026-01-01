@@ -149,7 +149,7 @@ export default function FreelancersPage() {
     useState<Freelancer | null>(null);
   const [formData, setFormData] =
     useState<CreateFreelancerForm>(initialFormState);
-  
+
   // Skills state for create dialog
   const [newSkills, setNewSkills] = useState<string[]>([]);
   const [newSkillInput, setNewSkillInput] = useState("");

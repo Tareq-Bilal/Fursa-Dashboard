@@ -662,9 +662,7 @@ export default function FreelancerDetailPage() {
           <DialogContent className="max-w-sm">
             <DialogHeader>
               <DialogTitle>Edit Skill</DialogTitle>
-              <DialogDescription>
-                Update the skill name
-              </DialogDescription>
+              <DialogDescription>Update the skill name</DialogDescription>
             </DialogHeader>
             <div className="py-4">
               <Input
