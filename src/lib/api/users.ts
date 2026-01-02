@@ -6,10 +6,13 @@ import {
   Contributor,
   CreateFreelancerDto,
   UpdateFreelancerDto,
+  CreateContributorDto,
+  UpdateContributorDto,
   ProjectOffer,
   FreelancerSkill,
   FreelancerRating,
   FreelancerCourse,
+  ContributorCourse,
   CreateFreelancerSkillDto,
   UpdateFreelancerSkillDto,
 } from "../types";
@@ -235,7 +238,7 @@ export const contributorsApi = {
     return response.data;
   },
 
-  create: async (contributor: Partial<Contributor>): Promise<Contributor> => {
+  create: async (contributor: CreateContributorDto): Promise<Contributor> => {
     const response = await apiClient.post<Contributor>(
       "/Contributors",
       contributor
@@ -245,7 +248,7 @@ export const contributorsApi = {
 
   update: async (
     id: number,
-    contributor: Partial<Contributor>
+    contributor: UpdateContributorDto
   ): Promise<Contributor> => {
     const response = await apiClient.put<Contributor>(
       `/Contributors/${id}`,
@@ -256,5 +259,32 @@ export const contributorsApi = {
 
   delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/Contributors/${id}`);
+  },
+
+  search: async (name: string): Promise<Contributor[]> => {
+    const response = await apiClient.get<Contributor[]>(
+      `/Contributors/search?name=${encodeURIComponent(name)}`
+    );
+    return response.data;
+  },
+
+  getCourses: async (contributorId: number): Promise<ContributorCourse[]> => {
+    const response = await apiClient.get<ContributorCourse[]>(
+      `/Courses/contributor/${contributorId}`
+    );
+    return response.data;
+  },
+
+  getLearnersCount: async (
+    contributorId: number
+  ): Promise<{ contributorId: number; learnerCount: number }> => {
+    const response = await apiClient.get<
+      { contributorId: number; learnerCount: number } | number
+    >(`/Contributors/${contributorId}/learners/count`);
+    // Handle both object and number responses
+    if (typeof response.data === "number") {
+      return { contributorId, learnerCount: response.data };
+    }
+    return response.data;
   },
 };

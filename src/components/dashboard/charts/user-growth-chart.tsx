@@ -56,8 +56,13 @@ export function UserGrowthChart() {
         </Select>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-[300px] w-full min-h-[300px]">
+          <ResponsiveContainer
+            width="100%"
+            height="100%"
+            minWidth={0}
+            minHeight={200}
+          >
             <LineChart data={filteredData}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis

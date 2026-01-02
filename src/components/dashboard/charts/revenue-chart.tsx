@@ -33,8 +33,13 @@ export function RevenueChart() {
         <CardTitle>Revenue Trend</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-[300px] w-full min-h-[300px]">
+          <ResponsiveContainer
+            width="100%"
+            height="100%"
+            minWidth={0}
+            minHeight={200}
+          >
             <AreaChart data={data}>
               <defs>
                 <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -57,7 +62,10 @@ export function RevenueChart() {
                   border: "1px solid hsl(var(--border))",
                   borderRadius: "8px",
                 }}
-                formatter={(value) => [`$${Number(value).toLocaleString()}`, "Revenue"]}
+                formatter={(value) => [
+                  `$${Number(value).toLocaleString()}`,
+                  "Revenue",
+                ]}
               />
               <Area
                 type="monotone"

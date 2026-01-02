@@ -69,14 +69,39 @@ export interface UpdateFreelancerDto {
 
 export interface Contributor {
   id: number;
+  name?: string;
+  fullName?: string;
+  description: string;
+  field: string;
+  country: string;
+  email: string;
+  profileImageUrl?: string;
+  profileImagePath?: string;
+  profileImage?: string;
+  imageUrl?: string;
+  registrationDate: string;
+  isActive: boolean;
+}
+
+export interface CreateContributorDto {
+  name: string;
+  description: string;
+  field: string;
+  country: string;
+  email: string;
+  password: string;
+  profileImageUrl?: string;
+}
+
+export interface UpdateContributorDto {
+  id: number;
   name: string;
   description: string;
   field: string;
   country: string;
   email: string;
   profileImageUrl?: string;
-  registrationDate: string;
-  isActive: boolean;
+  isActive?: boolean;
 }
 
 export interface FreelancerSkill {
@@ -110,6 +135,21 @@ export interface FreelancerCourse {
   contributorName: string;
 }
 
+export interface ContributorCourse {
+  id: number;
+  contributorID: number;
+  contributorName: string;
+  courseFieldID: number;
+  courseFieldName: string;
+  title: string;
+  description: string;
+  courseLink: string;
+  courseImageUrl: string;
+  isActive: boolean;
+  learnersCount: number;
+  createdDate: string;
+}
+
 export interface ProjectGallery {
   id: number;
   imageUrl: string;
@@ -124,6 +164,7 @@ export interface Project {
   publisherTitle: string;
   projectDescription: string;
   projectStatusId: number;
+  projectStatusName?: string;
   publishingDate: string;
   projectBudget: number;
   executionTime: number;
@@ -131,6 +172,15 @@ export interface Project {
   projectCategories: ProjectCategoryMapping[];
   projectSkills: ProjectSkill[];
   projectOffers: ProjectOffer[];
+}
+
+export interface UpdateProjectDto {
+  publisherName: string;
+  publisherTitle: string;
+  projectDescription: string;
+  projectStatusID: number;
+  projectBudget: number;
+  executionTime: number;
 }
 
 export interface ProjectOffer {
@@ -148,6 +198,16 @@ export interface ProjectOffer {
 export interface ProjectCategory {
   id: number;
   categoryName: string;
+}
+
+export interface CategoryOption {
+  value: number;
+  label: string;
+}
+
+export interface StatusOption {
+  value: number;
+  label: string;
 }
 
 export interface ProjectCategoryMapping {
