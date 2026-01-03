@@ -192,12 +192,13 @@ export default function OffersPage() {
       },
     },
     {
-      accessorKey: "projectDescription",
+      accessorKey: "projectTitle",
       header: "Project",
       cell: ({ row }) => (
         <div className="max-w-[200px]">
           <p className="font-medium line-clamp-1">
             {row.original.projectTitle ||
+              row.original.publisherTitle ||
               row.original.projectDescription ||
               "N/A"}
           </p>

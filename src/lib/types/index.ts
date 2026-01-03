@@ -218,6 +218,7 @@ export interface ProjectOffer {
   projectID?: number;
   projectDescription?: string;
   projectTitle?: string;
+  publisherTitle?: string;
   applicantId?: number;
   applicantID?: number;
   applicantName?: string;

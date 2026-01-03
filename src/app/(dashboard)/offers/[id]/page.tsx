@@ -379,10 +379,12 @@ export default function OfferDetailsPage({ params }: OfferDetailsPageProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {offer.projectTitle && (
+            {(offer.projectTitle || offer.publisherTitle) && (
               <div>
                 <p className="text-sm text-muted-foreground">Project Title</p>
-                <p className="font-medium">{offer.projectTitle}</p>
+                <p className="font-medium">
+                  {offer.projectTitle || offer.publisherTitle}
+                </p>
               </div>
             )}
             {offer.projectDescription && (
