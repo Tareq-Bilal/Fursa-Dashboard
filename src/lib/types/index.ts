@@ -195,21 +195,73 @@ export interface CreateProjectDto {
   categoryIDs: number[];
 }
 
+// Offer Status Constants
+export const OfferStatus = {
+  PENDING: 1,
+  ACCEPTED: 2,
+  REJECTED: 3,
+  CLOSED: 4,
+} as const;
+
+export type OfferStatusType = (typeof OfferStatus)[keyof typeof OfferStatus];
+
+export const OfferStatusLabels: Record<OfferStatusType, string> = {
+  [OfferStatus.PENDING]: "Pending",
+  [OfferStatus.ACCEPTED]: "Accepted",
+  [OfferStatus.REJECTED]: "Rejected",
+  [OfferStatus.CLOSED]: "Closed",
+};
+
 export interface ProjectOffer {
   id: number;
   projectId?: number;
   projectID?: number;
   projectDescription?: string;
+  projectTitle?: string;
   applicantId?: number;
   applicantID?: number;
   applicantName?: string;
+  applicantImagePath?: string;
   executionDays: number;
   offerAmount: number;
   offerDescription: string;
   offerDate: string;
-  offerStatus: boolean;
+  offerStatusID: number;
+  offerStatus?: boolean; // Keep for backward compatibility
   applicantAverageRating?: number;
   applicantTotalRatings?: number;
+}
+
+export interface CreateProjectOfferDto {
+  projectID: number;
+  applicantID: number;
+  executionDays: number;
+  offerAmount: number;
+  offerDescription: string;
+}
+
+export interface UpdateProjectOfferDto {
+  id: number;
+  projectID: number;
+  applicantID: number;
+  executionDays: number;
+  offerAmount: number;
+  offerDescription: string;
+}
+
+export interface PatchOfferStatusDto {
+  id: number;
+  offerStatusID: number;
+}
+
+export interface OfferSearchParams {
+  projectId?: number;
+  applicantId?: number;
+  statusId?: number;
+  minAmount?: number;
+  maxAmount?: number;
+  fromDate?: string;
+  toDate?: string;
 }
 
 export interface ProjectCategory {

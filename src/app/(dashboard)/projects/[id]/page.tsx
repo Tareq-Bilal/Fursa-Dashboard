@@ -41,6 +41,9 @@ import {
   Customer,
   ProjectOffer,
   ProjectCategoryMapping,
+  OfferStatus,
+  OfferStatusLabels,
+  OfferStatusType,
 } from "@/lib/types";
 import {
   ArrowLeft,
@@ -56,6 +59,10 @@ import {
   X,
   Star,
   Plus,
+  CheckCircle,
+  XCircle,
+  Ban,
+  Lock,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -70,6 +77,40 @@ const getStatusVariant = (
   if (name.includes("review")) return "secondary";
   if (name.includes("cancel") || name.includes("reject")) return "destructive";
   return "default";
+};
+
+// Helper function to get offer status badge variant
+const getOfferStatusBadgeVariant = (
+  statusId: number
+): "default" | "secondary" | "success" | "destructive" | "outline" => {
+  switch (statusId) {
+    case OfferStatus.PENDING:
+      return "secondary";
+    case OfferStatus.ACCEPTED:
+      return "success";
+    case OfferStatus.REJECTED:
+      return "destructive";
+    case OfferStatus.CLOSED:
+      return "outline";
+    default:
+      return "secondary";
+  }
+};
+
+// Helper function to get offer status icon
+const getOfferStatusIcon = (statusId: number) => {
+  switch (statusId) {
+    case OfferStatus.PENDING:
+      return <Clock className="h-3 w-3" />;
+    case OfferStatus.ACCEPTED:
+      return <CheckCircle className="h-3 w-3" />;
+    case OfferStatus.REJECTED:
+      return <XCircle className="h-3 w-3" />;
+    case OfferStatus.CLOSED:
+      return <Lock className="h-3 w-3" />;
+    default:
+      return <Clock className="h-3 w-3" />;
+  }
 };
 
 interface EditProjectForm {
@@ -684,10 +725,20 @@ export default function ProjectDetailPage() {
                           )}
                         </div>
                         <Badge
-                          variant={offer.offerStatus ? "success" : "secondary"}
+                          variant={getOfferStatusBadgeVariant(
+                            offer.offerStatusID ?? OfferStatus.PENDING
+                          )}
                           className="ml-4"
                         >
-                          {offer.offerStatus ? "Accepted" : "Pending"}
+                          <span className="flex items-center gap-1">
+                            {getOfferStatusIcon(
+                              offer.offerStatusID ?? OfferStatus.PENDING
+                            )}
+                            {OfferStatusLabels[
+                              (offer.offerStatusID ??
+                                OfferStatus.PENDING) as OfferStatusType
+                            ] || "Unknown"}
+                          </span>
                         </Badge>
                       </div>
                     </div>
