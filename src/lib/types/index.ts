@@ -175,24 +175,41 @@ export interface Project {
 }
 
 export interface UpdateProjectDto {
+  publisherID?: number;
   publisherName: string;
   publisherTitle: string;
   projectDescription: string;
   projectStatusID: number;
   projectBudget: number;
   executionTime: number;
+  categoryIDs: number[];
+}
+
+export interface CreateProjectDto {
+  publisherID: number;
+  publisherTitle: string;
+  projectDescription: string;
+  projectStatusID: number;
+  projectBudget: number;
+  executionTime: number;
+  categoryIDs: number[];
 }
 
 export interface ProjectOffer {
   id: number;
-  projectId: number;
-  applicantId: number;
+  projectId?: number;
+  projectID?: number;
+  projectDescription?: string;
+  applicantId?: number;
+  applicantID?: number;
   applicantName?: string;
   executionDays: number;
   offerAmount: number;
   offerDescription: string;
   offerDate: string;
   offerStatus: boolean;
+  applicantAverageRating?: number;
+  applicantTotalRatings?: number;
 }
 
 export interface ProjectCategory {
@@ -213,6 +230,7 @@ export interface StatusOption {
 export interface ProjectCategoryMapping {
   id: number;
   categoryId: number;
+  categoryID: number;
   categoryName: string;
 }
 

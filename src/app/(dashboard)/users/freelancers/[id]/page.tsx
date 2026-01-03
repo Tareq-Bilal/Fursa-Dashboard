@@ -327,10 +327,6 @@ export default function FreelancerDetailPage() {
     deleteMutation.mutate();
   };
 
-  const handleToggleActive = (checked: boolean) => {
-    toggleActiveMutation.mutate(checked);
-  };
-
   // Loading state
   if (isLoading) {
     return (

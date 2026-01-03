@@ -2,11 +2,13 @@ import apiClient from "./client";
 import {
   Project,
   ProjectCategory,
+  ProjectCategoryMapping,
   ProjectStatus,
   ProjectOffer,
   CategoryOption,
   StatusOption,
   UpdateProjectDto,
+  CreateProjectDto,
 } from "../types";
 
 // Projects API
@@ -21,13 +23,13 @@ export const projectsApi = {
     return response.data;
   },
 
-  create: async (project: Partial<Project>): Promise<Project> => {
+  create: async (project: CreateProjectDto): Promise<Project> => {
     const response = await apiClient.post<Project>("/Projects", project);
     return response.data;
   },
 
   update: async (id: number, project: UpdateProjectDto): Promise<Project> => {
-    const response = await apiClient.patch<Project>(`/Projects/${id}`, project);
+    const response = await apiClient.put<Project>(`/Projects/${id}`, project);
     return response.data;
   },
 
@@ -45,6 +47,32 @@ export const projectsApi = {
   getStatuses: async (): Promise<StatusOption[]> => {
     const response = await apiClient.get<StatusOption[]>("/Projects/Statuses");
     return response.data;
+  },
+
+  getCategoriesByProjectId: async (
+    projectId: number
+  ): Promise<ProjectCategoryMapping[]> => {
+    const response = await apiClient.get<ProjectCategoryMapping[]>(
+      `/Projects/${projectId}/categories`
+    );
+    return response.data;
+  },
+
+  addCategoriesToProject: async (
+    projectId: number,
+    categoryId: number
+  ): Promise<void> => {
+    await apiClient.post(`/Projects/${projectId}/categories`, {
+      projectId,
+      categoryID: categoryId,
+    });
+  },
+
+  removeCategoryFromProject: async (
+    projectId: number,
+    categoryId: number
+  ): Promise<void> => {
+    await apiClient.delete(`/Projects/${projectId}/categories/${categoryId}`);
   },
 };
 
@@ -123,6 +151,13 @@ export const projectOffersApi = {
 
   getById: async (id: number): Promise<ProjectOffer> => {
     const response = await apiClient.get<ProjectOffer>(`/ProjectOffers/${id}`);
+    return response.data;
+  },
+
+  getByProjectId: async (projectId: number): Promise<ProjectOffer[]> => {
+    const response = await apiClient.get<ProjectOffer[]>(
+      `/ProjectOffers/project/${projectId}`
+    );
     return response.data;
   },
 

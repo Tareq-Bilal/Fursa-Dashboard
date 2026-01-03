@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DataTable } from "@/components/shared/data-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,29 +16,119 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ProjectCategory } from "@/lib/types";
-import { Plus, Pencil, Trash2 } from "lucide-react";
-
-const mockCategories: ProjectCategory[] = [
-  { id: 1, categoryName: "Web Development" },
-  { id: 2, categoryName: "Mobile Development" },
-  { id: 3, categoryName: "UI/UX Design" },
-  { id: 4, categoryName: "Data Science" },
-  { id: 5, categoryName: "DevOps" },
-  { id: 6, categoryName: "Content Writing" },
-  { id: 7, categoryName: "Digital Marketing" },
-  { id: 8, categoryName: "Video Editing" },
-  { id: 9, categoryName: "SEO" },
-  { id: 10, categoryName: "Graphic Design" },
-];
+import { projectCategoriesApi } from "@/lib/api/projects";
+import { useToast } from "@/lib/hooks/use-toast";
+import { Plus, Pencil, Trash2, AlertCircle, RefreshCw } from "lucide-react";
 
 export default function ProjectCategoriesPage() {
-  const [categories] = useState<ProjectCategory[]>(mockCategories);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<ProjectCategory | null>(null);
+  const [selectedCategory, setSelectedCategory] =
+    useState<ProjectCategory | null>(null);
   const [categoryName, setCategoryName] = useState("");
+
+  // Fetch all categories
+  const {
+    data: categories = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["project-categories-list"],
+    queryFn: projectCategoriesApi.getAll,
+  });
+
+  // Create category mutation
+  const createMutation = useMutation({
+    mutationFn: projectCategoriesApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-categories-list"] });
+      queryClient.invalidateQueries({ queryKey: ["project-categories"] });
+      setIsCreateOpen(false);
+      setCategoryName("");
+      toast({
+        title: "Success",
+        description: "Category created successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create category",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update category mutation
+  const updateMutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: Partial<ProjectCategory>;
+    }) => projectCategoriesApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-categories-list"] });
+      queryClient.invalidateQueries({ queryKey: ["project-categories"] });
+      setIsEditOpen(false);
+      setSelectedCategory(null);
+      setCategoryName("");
+      toast({
+        title: "Success",
+        description: "Category updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update category",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete category mutation
+  const deleteMutation = useMutation({
+    mutationFn: projectCategoriesApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project-categories-list"] });
+      queryClient.invalidateQueries({ queryKey: ["project-categories"] });
+      setIsDeleteOpen(false);
+      setSelectedCategory(null);
+      toast({
+        title: "Success",
+        description: "Category deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete category",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreate = () => {
+    createMutation.mutate({ categoryName });
+  };
+
+  const handleUpdate = () => {
+    if (!selectedCategory) return;
+    updateMutation.mutate({
+      id: selectedCategory.id,
+      data: { id: selectedCategory.id, categoryName },
+    });
+  };
 
   const handleEdit = (category: ProjectCategory) => {
     setSelectedCategory(category);
@@ -51,9 +142,9 @@ export default function ProjectCategoriesPage() {
   };
 
   const confirmDelete = () => {
-    console.log("Deleting category:", selectedCategory?.id);
-    setIsDeleteOpen(false);
-    setSelectedCategory(null);
+    if (selectedCategory) {
+      deleteMutation.mutate(selectedCategory.id);
+    }
   };
 
   const columns: ColumnDef<ProjectCategory>[] = [
@@ -98,11 +189,63 @@ export default function ProjectCategoriesPage() {
     },
   ];
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <Skeleton className="h-9 w-64" />
+            <Skeleton className="mt-2 h-5 w-96" />
+          </div>
+          <Skeleton className="h-9 w-32" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Project Categories
+            </h1>
+            <p className="text-muted-foreground">
+              Manage project categories for the platform
+            </p>
+          </div>
+        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {error instanceof Error
+              ? error.message
+              : "Failed to load categories. Please try again."}
+          </AlertDescription>
+        </Alert>
+        <Button onClick={() => refetch()} variant="outline">
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Project Categories</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Project Categories
+          </h1>
           <p className="text-muted-foreground">
             Manage project categories for the platform
           </p>
@@ -125,9 +268,7 @@ export default function ProjectCategoriesPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add New Category</DialogTitle>
-            <DialogDescription>
-              Create a new project category
-            </DialogDescription>
+            <DialogDescription>Create a new project category</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -144,12 +285,11 @@ export default function ProjectCategoriesPage() {
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => {
-              console.log("Creating category:", categoryName);
-              setIsCreateOpen(false);
-              setCategoryName("");
-            }}>
-              Create Category
+            <Button
+              onClick={handleCreate}
+              disabled={!categoryName.trim() || createMutation.isPending}
+            >
+              {createMutation.isPending ? "Creating..." : "Create Category"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -160,9 +300,7 @@ export default function ProjectCategoriesPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Category</DialogTitle>
-            <DialogDescription>
-              Update the category name
-            </DialogDescription>
+            <DialogDescription>Update the category name</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -179,12 +317,11 @@ export default function ProjectCategoriesPage() {
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => {
-              console.log("Updating category:", selectedCategory?.id, categoryName);
-              setIsEditOpen(false);
-              setCategoryName("");
-            }}>
-              Save Changes
+            <Button
+              onClick={handleUpdate}
+              disabled={!categoryName.trim() || updateMutation.isPending}
+            >
+              {updateMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -196,7 +333,7 @@ export default function ProjectCategoriesPage() {
         onOpenChange={setIsDeleteOpen}
         title="Delete Category"
         description={`Are you sure you want to delete "${selectedCategory?.categoryName}"? This action cannot be undone.`}
-        confirmText="Delete"
+        confirmText={deleteMutation.isPending ? "Deleting..." : "Delete"}
         onConfirm={confirmDelete}
         variant="destructive"
       />
