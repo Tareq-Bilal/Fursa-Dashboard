@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ColumnDef } from "@tanstack/react-table";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DataTable } from "@/components/shared/data-table";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,32 +16,126 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CourseField } from "@/lib/types";
-import { Plus, Pencil, Trash2 } from "lucide-react";
-
-const mockFields: CourseField[] = [
-  { id: 1, fieldName: "Web Development" },
-  { id: 2, fieldName: "Data Science" },
-  { id: 3, fieldName: "Design" },
-  { id: 4, fieldName: "Mobile Development" },
-  { id: 5, fieldName: "DevOps" },
-  { id: 6, fieldName: "Cybersecurity" },
-  { id: 7, fieldName: "Cloud Computing" },
-  { id: 8, fieldName: "Artificial Intelligence" },
-];
+import { courseFieldsApi } from "@/lib/api/courses";
+import { useToast } from "@/lib/hooks/use-toast";
+import { Plus, Pencil, Trash2, AlertCircle, RefreshCw } from "lucide-react";
 
 export default function CourseFieldsPage() {
-  const [fields] = useState<CourseField[]>(mockFields);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedField, setSelectedField] = useState<CourseField | null>(null);
   const [fieldName, setFieldName] = useState("");
 
-  const handleEdit = (field: CourseField) => {
-    setSelectedField(field);
-    setFieldName(field.fieldName);
+  // Fetch all fields
+  const {
+    data: fields = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["course-fields-list"],
+    queryFn: courseFieldsApi.getAll,
+  });
+
+  // Create field mutation
+  const createMutation = useMutation({
+    mutationFn: courseFieldsApi.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["course-fields-list"] });
+      queryClient.invalidateQueries({ queryKey: ["course-fields"] });
+      setIsCreateOpen(false);
+      setFieldName("");
+      toast({
+        title: "Success",
+        description: "Course field created successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create course field",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update field mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { id: number; field: string } }) =>
+      courseFieldsApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["course-fields-list"] });
+      queryClient.invalidateQueries({ queryKey: ["course-fields"] });
+      setIsEditOpen(false);
+      setSelectedField(null);
+      setFieldName("");
+      toast({
+        title: "Success",
+        description: "Course field updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update course field",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete field mutation
+  const deleteMutation = useMutation({
+    mutationFn: courseFieldsApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["course-fields-list"] });
+      queryClient.invalidateQueries({ queryKey: ["course-fields"] });
+      setIsDeleteOpen(false);
+      setSelectedField(null);
+      toast({
+        title: "Success",
+        description: "Course field deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete course field",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreate = () => {
+    if (!fieldName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a field name",
+        variant: "destructive",
+      });
+      return;
+    }
+    createMutation.mutate({ field: fieldName.trim() });
+  };
+
+  const handleEdit = (courseField: CourseField) => {
+    setSelectedField(courseField);
+    setFieldName(courseField.field);
     setIsEditOpen(true);
+  };
+
+  const handleUpdate = () => {
+    if (!selectedField || !fieldName.trim()) return;
+    updateMutation.mutate({
+      id: selectedField.id,
+      data: { id: selectedField.id, field: fieldName.trim() },
+    });
   };
 
   const handleDelete = (field: CourseField) => {
@@ -49,9 +144,9 @@ export default function CourseFieldsPage() {
   };
 
   const confirmDelete = () => {
-    console.log("Deleting field:", selectedField?.id);
-    setIsDeleteOpen(false);
-    setSelectedField(null);
+    if (selectedField) {
+      deleteMutation.mutate(selectedField.id);
+    }
   };
 
   const columns: ColumnDef<CourseField>[] = [
@@ -63,10 +158,10 @@ export default function CourseFieldsPage() {
       ),
     },
     {
-      accessorKey: "fieldName",
+      accessorKey: "field",
       header: "Field Name",
       cell: ({ row }) => (
-        <span className="font-medium">{row.original.fieldName}</span>
+        <span className="font-medium">{row.original.field}</span>
       ),
     },
     {
@@ -96,6 +191,53 @@ export default function CourseFieldsPage() {
     },
   ];
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <Skeleton className="h-9 w-40" />
+            <Skeleton className="mt-2 h-5 w-56" />
+          </div>
+          <Skeleton className="h-9 w-28" />
+        </div>
+        <div className="space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Course Fields</h1>
+          <p className="text-muted-foreground">
+            Manage course field categories
+          </p>
+        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {error instanceof Error
+              ? error.message
+              : "Failed to load course fields"}
+          </AlertDescription>
+        </Alert>
+        <Button onClick={() => refetch()} variant="outline">
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Try Again
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -114,7 +256,7 @@ export default function CourseFieldsPage() {
       <DataTable
         columns={columns}
         data={fields}
-        searchKey="fieldName"
+        searchKey="field"
         searchPlaceholder="Search fields..."
       />
 
@@ -142,12 +284,8 @@ export default function CourseFieldsPage() {
             <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => {
-              console.log("Creating field:", fieldName);
-              setIsCreateOpen(false);
-              setFieldName("");
-            }}>
-              Create Field
+            <Button onClick={handleCreate} disabled={createMutation.isPending}>
+              {createMutation.isPending ? "Creating..." : "Create Field"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -158,9 +296,7 @@ export default function CourseFieldsPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Field</DialogTitle>
-            <DialogDescription>
-              Update the field name
-            </DialogDescription>
+            <DialogDescription>Update the field name</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -177,12 +313,8 @@ export default function CourseFieldsPage() {
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => {
-              console.log("Updating field:", selectedField?.id, fieldName);
-              setIsEditOpen(false);
-              setFieldName("");
-            }}>
-              Save Changes
+            <Button onClick={handleUpdate} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -193,8 +325,8 @@ export default function CourseFieldsPage() {
         open={isDeleteOpen}
         onOpenChange={setIsDeleteOpen}
         title="Delete Field"
-        description={`Are you sure you want to delete "${selectedField?.fieldName}"? This action cannot be undone.`}
-        confirmText="Delete"
+        description={`Are you sure you want to delete "${selectedField?.field}"? This action cannot be undone.`}
+        confirmText={deleteMutation.isPending ? "Deleting..." : "Delete"}
         onConfirm={confirmDelete}
         variant="destructive"
       />

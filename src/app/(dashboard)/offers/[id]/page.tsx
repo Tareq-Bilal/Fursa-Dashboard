@@ -1,10 +1,12 @@
 "use client";
 
-import { use } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { offersApi } from "@/lib/api/offers";
+import { freelancersApi } from "@/lib/api/users";
+import { projectsApi } from "@/lib/api/projects";
 import { OfferStatus, OfferStatusLabels, OfferStatusType } from "@/lib/types";
 import { useToast } from "@/lib/hooks/use-toast";
 import { format } from "date-fns";
@@ -22,11 +24,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { useState } from "react";
 import {
   ArrowLeft,
   Calendar,
@@ -42,6 +44,7 @@ import {
   Ban,
   Lock,
   ChevronDown,
+  RefreshCw,
 } from "lucide-react";
 
 // Helper function to get status badge variant
@@ -78,26 +81,42 @@ const getStatusIcon = (statusId: number) => {
   }
 };
 
-interface OfferDetailsPageProps {
-  params: Promise<{ id: string }>;
-}
-
-export default function OfferDetailsPage({ params }: OfferDetailsPageProps) {
-  const { id } = use(params);
-  const offerId = parseInt(id);
+export default function OfferDetailsPage() {
+  const params = useParams();
+  const offerId = Number(params.id);
   const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
+  // Fetch offer details
   const {
     data: offer,
     isLoading,
     isError,
+    refetch,
   } = useQuery({
     queryKey: ["offer", offerId],
     queryFn: () => offersApi.getById(offerId),
     enabled: !isNaN(offerId),
+  });
+
+  // Fetch freelancer details to get profile image
+  const applicantId = offer?.applicantID || offer?.applicantId;
+  const { data: freelancer } = useQuery({
+    queryKey: ["freelancer", applicantId],
+    queryFn: () => freelancersApi.getById(applicantId!),
+    enabled: !!applicantId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Fetch project details for more info
+  const projectId = offer?.projectID || offer?.projectId;
+  const { data: project } = useQuery({
+    queryKey: ["project", projectId],
+    queryFn: () => projectsApi.getById(projectId!),
+    enabled: !!projectId,
+    staleTime: 5 * 60 * 1000,
   });
 
   const deleteMutation = useMutation({
@@ -127,6 +146,7 @@ export default function OfferDetailsPage({ params }: OfferDetailsPageProps) {
       toast({
         title: "Status updated",
         description: "The offer status has been updated successfully.",
+        variant: "success",
       });
     },
     onError: (error: Error) => {
@@ -140,7 +160,7 @@ export default function OfferDetailsPage({ params }: OfferDetailsPageProps) {
 
   const handleStatusChange = (newStatusId: number) => {
     updateStatusMutation.mutate({
-      id: offerId,
+      offerID: offerId,
       offerStatusID: newStatusId,
     });
   };
@@ -207,14 +227,20 @@ export default function OfferDetailsPage({ params }: OfferDetailsPageProps) {
             </p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
                 disabled={updateStatusMutation.isPending}
               >
-                Change Status
+                {updateStatusMutation.isPending
+                  ? "Updating..."
+                  : "Change Status"}
                 <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -237,12 +263,14 @@ export default function OfferDetailsPage({ params }: OfferDetailsPageProps) {
                   Accept Offer
                 </DropdownMenuItem>
               )}
+              <DropdownMenuSeparator />
               {(offer.offerStatusID ?? OfferStatus.PENDING) !==
                 OfferStatus.REJECTED && (
                 <DropdownMenuItem
                   onClick={() => handleStatusChange(OfferStatus.REJECTED)}
+                  className="text-destructive focus:text-destructive"
                 >
-                  <Ban className="mr-2 h-4 w-4 text-red-600" />
+                  <Ban className="mr-2 h-4 w-4" />
                   Reject Offer
                 </DropdownMenuItem>
               )}
@@ -277,7 +305,10 @@ export default function OfferDetailsPage({ params }: OfferDetailsPageProps) {
           <CardContent>
             <div className="flex items-start gap-4">
               <Avatar className="h-16 w-16">
-                <AvatarImage src={offer.applicantImagePath} />
+                <AvatarImage
+                  src={freelancer?.profileImagePath || offer.applicantImagePath}
+                  alt={offer.applicantName || "Freelancer"}
+                />
                 <AvatarFallback className="text-lg">
                   {(offer.applicantName || "NA")
                     .split(" ")
@@ -288,29 +319,44 @@ export default function OfferDetailsPage({ params }: OfferDetailsPageProps) {
               <div className="space-y-2">
                 <div>
                   <p className="font-semibold text-lg">
-                    {offer.applicantName || "N/A"}
+                    {freelancer?.fullName || offer.applicantName || "N/A"}
                   </p>
-                  {offer.applicantID && (
+                  {freelancer?.jobTitle && (
+                    <p className="text-sm text-muted-foreground">
+                      {freelancer.jobTitle}
+                    </p>
+                  )}
+                  {applicantId && (
                     <Link
-                      href={`/users/freelancers/${
-                        offer.applicantID || offer.applicantId
-                      }`}
+                      href={`/users/freelancers/${applicantId}`}
                       className="text-sm text-primary hover:underline"
                     >
                       View Profile →
                     </Link>
                   )}
                 </div>
-                {offer.applicantAverageRating !== undefined && (
+                {(freelancer?.rating || offer.applicantAverageRating) !==
+                  undefined && (
                   <div className="flex items-center gap-2">
                     <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                     <span className="font-medium">
-                      {offer.applicantAverageRating.toFixed(1)}
+                      {(
+                        freelancer?.rating ||
+                        offer.applicantAverageRating ||
+                        0
+                      ).toFixed(1)}
                     </span>
-                    <span className="text-muted-foreground text-sm">
-                      ({offer.applicantTotalRatings} ratings)
-                    </span>
+                    {offer.applicantTotalRatings !== undefined && (
+                      <span className="text-muted-foreground text-sm">
+                        ({offer.applicantTotalRatings} ratings)
+                      </span>
+                    )}
                   </div>
+                )}
+                {freelancer?.country && (
+                  <p className="text-sm text-muted-foreground">
+                    📍 {freelancer.country}
+                  </p>
                 )}
               </div>
             </div>
@@ -379,25 +425,52 @@ export default function OfferDetailsPage({ params }: OfferDetailsPageProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {(offer.projectTitle || offer.publisherTitle) && (
+            <div>
+              <p className="text-sm text-muted-foreground">Project Title</p>
+              <p className="font-medium">
+                {project?.publisherTitle ||
+                  offer.projectTitle ||
+                  offer.publisherTitle ||
+                  "N/A"}
+              </p>
+            </div>
+            {(project?.projectDescription || offer.projectDescription) && (
               <div>
-                <p className="text-sm text-muted-foreground">Project Title</p>
-                <p className="font-medium">
-                  {offer.projectTitle || offer.publisherTitle}
+                <p className="text-sm text-muted-foreground">Description</p>
+                <p className="whitespace-pre-wrap">
+                  {project?.projectDescription || offer.projectDescription}
                 </p>
               </div>
             )}
-            {offer.projectDescription && (
-              <div>
-                <p className="text-sm text-muted-foreground">Description</p>
-                <p>{offer.projectDescription}</p>
+            {project && (
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div>
+                  <p className="text-sm text-muted-foreground">Budget</p>
+                  <p className="font-medium">
+                    ${project.projectBudget?.toLocaleString() || "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Duration</p>
+                  <p className="font-medium">{project.executionTime} days</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Status</p>
+                  <p className="font-medium">
+                    {project.projectStatusName || "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Publisher</p>
+                  <p className="font-medium">
+                    {project.publisherName || "N/A"}
+                  </p>
+                </div>
               </div>
             )}
-            {(offer.projectID || offer.projectId) && (
+            {projectId && (
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/projects/${offer.projectID || offer.projectId}`}>
-                  View Project →
-                </Link>
+                <Link href={`/projects/${projectId}`}>View Project →</Link>
               </Button>
             )}
           </div>

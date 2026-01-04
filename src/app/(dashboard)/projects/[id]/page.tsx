@@ -313,6 +313,7 @@ export default function ProjectDetailPage() {
 
   const handleUpdate = () => {
     updateMutation.mutate({
+      projectId: projectId,
       publisherID: formData.publisherID,
       publisherName: formData.publisherName,
       publisherTitle: formData.publisherTitle,

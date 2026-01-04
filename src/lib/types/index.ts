@@ -175,7 +175,8 @@ export interface Project {
 }
 
 export interface UpdateProjectDto {
-  publisherID?: number;
+  projectId: number;
+  publisherID: number;
   publisherName: string;
   publisherTitle: string;
   projectDescription: string;
@@ -251,7 +252,7 @@ export interface UpdateProjectOfferDto {
 }
 
 export interface PatchOfferStatusDto {
-  id: number;
+  offerID: number;
   offerStatusID: number;
 }
 
@@ -314,22 +315,56 @@ export interface Offer {
 export interface Course {
   id: number;
   contributorId: number;
+  contributorID?: number;
   contributorName?: string;
   fieldId: number;
+  courseFieldID?: number;
   fieldName?: string;
-  courseName: string;
-  courseDescription: string;
-  courseUrl: string;
+  courseFieldName?: string;
+  courseName?: string;
+  title?: string;
+  courseDescription?: string;
+  description?: string;
+  courseUrl?: string;
+  courseLink?: string;
   courseImageUrl?: string;
-  courseDuration: number;
-  publishedDate: string;
-  enrolledCount: number;
-  rating: number;
+  courseDuration?: number;
+  publishedDate?: string;
+  createdDate?: string;
+  enrolledCount?: number;
+  learnersCount?: number;
+  rating?: number;
+  isActive?: boolean;
+}
+
+export interface CreateCourseDto {
+  contributorID: number;
+  courseFieldID: number;
+  title: string;
+  description: string;
+  courseLink: string;
+  courseImageUrl?: string;
+}
+
+export interface UpdateCourseDto {
+  id: number;
+  contributorID: number;
+  courseFieldID: number;
+  title: string;
+  description: string;
+  courseLink: string;
+  courseImageUrl?: string;
+  isActive?: boolean;
+}
+
+export interface CourseFieldOption {
+  value: number;
+  label: string;
 }
 
 export interface CourseField {
   id: number;
-  fieldName: string;
+  field: string;
 }
 
 // Notification Types

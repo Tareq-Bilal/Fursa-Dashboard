@@ -34,7 +34,11 @@ export const projectsApi = {
   },
 
   delete: async (id: number): Promise<void> => {
-    await apiClient.delete(`/Projects/${id}`);
+    await apiClient.request({
+      method: "DELETE",
+      url: `/Projects/${id}`,
+      data: { projectId: id },
+    });
   },
 
   getCategories: async (): Promise<CategoryOption[]> => {

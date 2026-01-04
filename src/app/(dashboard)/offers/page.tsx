@@ -24,6 +24,7 @@ import {
   OfferStatusType,
 } from "@/lib/types";
 import { offersApi } from "@/lib/api/offers";
+import { freelancersApi } from "@/lib/api/users";
 import { useToast } from "@/lib/hooks/use-toast";
 import { format } from "date-fns";
 import {
@@ -75,6 +76,44 @@ const getStatusIcon = (statusId: number) => {
       return <Clock className="h-3 w-3" />;
   }
 };
+
+// Component to fetch and display freelancer avatar
+function FreelancerAvatar({ offer }: { offer: ProjectOffer }) {
+  const applicantId = offer.applicantID || offer.applicantId;
+
+  const { data: freelancer } = useQuery({
+    queryKey: ["freelancer", applicantId],
+    queryFn: () => freelancersApi.getById(applicantId!),
+    enabled: !!applicantId,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  const imageSrc = freelancer?.profileImagePath || offer.applicantImagePath;
+  const name = offer.applicantName || "NA";
+
+  return (
+    <div className="flex items-center gap-3">
+      <Avatar className="h-9 w-9">
+        <AvatarImage src={imageSrc} alt={name} />
+        <AvatarFallback>
+          {name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex flex-col">
+        <span className="font-medium">{name}</span>
+        {offer.applicantAverageRating !== undefined && (
+          <span className="text-xs text-muted-foreground">
+            ⭐ {offer.applicantAverageRating.toFixed(1)} (
+            {offer.applicantTotalRatings} ratings)
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function OffersPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -146,7 +185,7 @@ export default function OffersPage() {
 
   const handleStatusChange = (offer: ProjectOffer, newStatusId: number) => {
     updateStatusMutation.mutate({
-      id: offer.id,
+      offerID: offer.id,
       offerStatusID: newStatusId,
     });
   };
@@ -165,30 +204,7 @@ export default function OffersPage() {
       ),
       cell: ({ row }) => {
         const offer = row.original;
-        return (
-          <div className="flex items-center gap-3">
-            <Avatar className="h-9 w-9">
-              <AvatarImage src={offer.applicantImagePath} />
-              <AvatarFallback>
-                {(offer.applicantName || "NA")
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col">
-              <span className="font-medium">
-                {offer.applicantName || "N/A"}
-              </span>
-              {offer.applicantAverageRating !== undefined && (
-                <span className="text-xs text-muted-foreground">
-                  ⭐ {offer.applicantAverageRating.toFixed(1)} (
-                  {offer.applicantTotalRatings} ratings)
-                </span>
-              )}
-            </div>
-          </div>
-        );
+        return <FreelancerAvatar offer={offer} />;
       },
     },
     {
