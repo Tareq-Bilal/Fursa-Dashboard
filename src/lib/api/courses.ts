@@ -129,7 +129,10 @@ export const courseFieldsApi = {
     return response.data;
   },
 
-  update: async (id: number, data: UpdateCourseFieldDto): Promise<CourseField> => {
+  update: async (
+    id: number,
+    data: UpdateCourseFieldDto
+  ): Promise<CourseField> => {
     const response = await apiClient.put<CourseField>(
       `/CourseFields/${id}`,
       data

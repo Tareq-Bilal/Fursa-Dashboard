@@ -68,8 +68,13 @@ export default function CourseFieldsPage() {
 
   // Update field mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { id: number; field: string } }) =>
-      courseFieldsApi.update(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: { id: number; field: string };
+    }) => courseFieldsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["course-fields-list"] });
       queryClient.invalidateQueries({ queryKey: ["course-fields"] });

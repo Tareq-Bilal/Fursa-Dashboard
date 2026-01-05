@@ -376,6 +376,17 @@ export interface Notification {
   sentAt: string;
   readCount: number;
   totalRecipients: number;
+  isRead?: boolean;
+  createdAt?: string;
+  recipientId?: number;
+  recipientType?: string;
+}
+
+export interface NotificationsResponse {
+  items: Notification[];
+  totalCount: number;
+  skip: number;
+  take: number;
 }
 
 // Rating Types

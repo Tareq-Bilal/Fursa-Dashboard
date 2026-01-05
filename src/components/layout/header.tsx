@@ -4,6 +4,7 @@ import { useTheme } from "next-themes";
 import { useSidebarStore } from "@/lib/stores/sidebar-store";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { authApi } from "@/lib/api/auth";
+import { notificationsApi } from "@/lib/api/notifications";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,7 +28,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
-import { memo, useCallback } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
+import { Notification } from "@/lib/types";
+import { formatDistanceToNow } from "date-fns";
 
 // Memoized ThemeToggle component
 const ThemeToggle = memo(function ThemeToggle() {
@@ -48,41 +51,114 @@ const ThemeToggle = memo(function ThemeToggle() {
 
 // Memoized NotificationsDropdown component
 const NotificationsDropdown = memo(function NotificationsDropdown() {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const data = await notificationsApi.getAll({ skip: 0, take: 10 });
+      setNotifications(data);
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    // Refresh notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  const handleMarkAsRead = async (notification: Notification) => {
+    if (!notification.recipientType || !notification.recipientId) {
+      console.error("Missing recipientType or recipientId on notification");
+      return;
+    }
+    try {
+      await notificationsApi.markAsRead(
+        notification.id,
+        notification.recipientType,
+        notification.recipientId
+      );
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
+      );
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error);
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
-          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
-            3
-          </span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-destructive-foreground">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+        <DropdownMenuLabel className="flex items-center justify-between">
+          <span>Notifications</span>
+          {unreadCount > 0 && (
+            <span className="text-xs font-normal text-muted-foreground">
+              {unreadCount} unread
+            </span>
+          )}
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <div className="max-h-80 overflow-y-auto">
-          <DropdownMenuItem className="flex flex-col items-start gap-1 p-3">
-            <span className="font-medium">New user registered</span>
-            <span className="text-xs text-muted-foreground">
-              John Doe just signed up as a freelancer
-            </span>
-            <span className="text-xs text-muted-foreground">2 min ago</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="flex flex-col items-start gap-1 p-3">
-            <span className="font-medium">New project posted</span>
-            <span className="text-xs text-muted-foreground">
-              Web Development project with $500 budget
-            </span>
-            <span className="text-xs text-muted-foreground">15 min ago</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="flex flex-col items-start gap-1 p-3">
-            <span className="font-medium">Offer accepted</span>
-            <span className="text-xs text-muted-foreground">
-              Sarah accepted an offer for Mobile App project
-            </span>
-            <span className="text-xs text-muted-foreground">1 hour ago</span>
-          </DropdownMenuItem>
+          {isLoading ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              Loading notifications...
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              No notifications
+            </div>
+          ) : (
+            notifications.slice(0, 5).map((notification) => (
+              <DropdownMenuItem
+                key={notification.id}
+                className={cn(
+                  "flex flex-col items-start gap-1 p-3 cursor-pointer",
+                  !notification.isRead && "bg-muted/50"
+                )}
+                onClick={() => handleMarkAsRead(notification)}
+              >
+                <div className="flex items-center gap-2 w-full">
+                  <span className="font-medium flex-1">
+                    {notification.title}
+                  </span>
+                  {!notification.isRead && (
+                    <span className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground line-clamp-2">
+                  {notification.message}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {notification.sentAt || notification.createdAt
+                    ? formatDistanceToNow(
+                        new Date(
+                          notification.sentAt || notification.createdAt || ""
+                        ),
+                        { addSuffix: true }
+                      )
+                    : ""}
+                </span>
+              </DropdownMenuItem>
+            ))
+          )}
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className="justify-center">
