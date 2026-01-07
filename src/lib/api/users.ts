@@ -1,6 +1,8 @@
 import apiClient from "./client";
 import {
   Admin,
+  CreateAdminDto,
+  UpdateAdminDto,
   Customer,
   Freelancer,
   Contributor,
@@ -29,13 +31,13 @@ export const adminsApi = {
     return response.data;
   },
 
-  create: async (admin: Partial<Admin>): Promise<Admin> => {
+  create: async (admin: CreateAdminDto): Promise<Admin> => {
     const response = await apiClient.post<Admin>("/Admins", admin);
     return response.data;
   },
 
-  update: async (id: string, admin: Partial<Admin>): Promise<Admin> => {
-    const response = await apiClient.put<Admin>(`/Admins/${id}`, admin);
+  update: async (admin: UpdateAdminDto): Promise<Admin> => {
+    const response = await apiClient.put<Admin>("/Admins", admin);
     return response.data;
   },
 

@@ -52,8 +52,15 @@ export default function LoginPage() {
       const response = await authApi.login(data);
 
       // Check if user is admin (roleNumber: 0)
-      if (response.roleNumber !== 0) {
+      if (response.user.roleNumber !== 0) {
         setError("Access denied. Admin privileges required.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if user is active
+      if (!response.user.isActive) {
+        setError("Your account has been deactivated. Please contact support.");
         setIsLoading(false);
         return;
       }
@@ -66,7 +73,9 @@ export default function LoginPage() {
         fullName: response.user.fullName,
         email: response.user.email,
         profileImagePath: response.user.profileImagePath,
-        role: response.roleNumber,
+        role: response.user.role,
+        roleNumber: response.user.roleNumber,
+        isActive: response.user.isActive,
       });
 
       router.push("/");

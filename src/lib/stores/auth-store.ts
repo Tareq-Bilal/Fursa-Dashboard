@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { AuthUser } from '../types';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { AuthUser } from "../types";
+import Cookies from "js-cookie";
 
 interface AuthState {
   user: AuthUser | null;
@@ -23,11 +24,21 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       setIsAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
       setIsLoading: (isLoading) => set({ isLoading }),
-      logout: () => set({ user: null, isAuthenticated: false }),
+      logout: () => {
+        // Clear cookies
+        Cookies.remove("auth_token");
+        Cookies.remove("refresh_token");
+        Cookies.remove("user");
+        // Clear state
+        set({ user: null, isAuthenticated: false });
+      },
     }),
     {
-      name: 'auth-storage',
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+      name: "auth-storage",
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
     }
   )
 );

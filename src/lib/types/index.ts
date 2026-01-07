@@ -10,6 +10,25 @@ export interface Admin {
   isActive: boolean;
 }
 
+export interface CreateAdminDto {
+  fullName: string;
+  description: string;
+  country: string;
+  email: string;
+  password: string;
+  profileImagePath?: string;
+}
+
+export interface UpdateAdminDto {
+  id: string;
+  fullName: string;
+  description: string;
+  country: string;
+  email: string;
+  profileImagePath?: string;
+  isActive: boolean;
+}
+
 export interface Customer {
   id: number;
   fullName: string;
@@ -422,11 +441,21 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface LoginUserResponse {
+  id: string;
+  fullName: string;
+  email: string;
+  profileImagePath?: string;
+  role: string;
+  roleNumber: number;
+  isActive: boolean;
+}
+
 export interface LoginResponse {
   token: string;
   refreshToken: string;
-  user: Admin;
-  roleNumber: number;
+  tokenExpiration: string;
+  user: LoginUserResponse;
 }
 
 export interface AuthUser {
@@ -434,7 +463,9 @@ export interface AuthUser {
   fullName: string;
   email: string;
   profileImagePath?: string;
-  role: number;
+  role: string;
+  roleNumber: number;
+  isActive: boolean;
 }
 
 // Dashboard Statistics
